@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MZ식 팩폭 MBTI 테스트</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 커스텀 폰트 (Pretendard) */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 애니메이션 정의 */
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0.9); }
+            50% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .animate-pop-in {
+            animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin-slow 1s linear infinite;
+        }
+
+        /* 스크롤바 숨기기 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 호버 트랜지션 부드럽게 */
+        .btn-transition {
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .btn-transition:active {
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 min-h-screen flex items-center justify-center p-4 overflow-hidden text-gray-800">
+
+    <!-- 메인 앱 컨테이너 (글래스모피즘 적용) -->
+    <main class="w-full max-w-md bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-6 sm:p-10 relative overflow-hidden h-[600px] flex flex-col relative">
+        
+        <!-- 토스트 메시지 (공유 완료 등) -->
+        <div id="toast" class="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+            링크가 복사되었습니다! ✨
+        </div>
+
+        <!-- 1. 시작 화면 -->
+        <section id="screen-intro" class="flex flex-col h-full justify-center items-center text-center animate-pop-in">
+            <div class="mb-6 text-6xl">😎</div>
+            <h1 class="text-3xl font-extrabold mb-2 tracking-tight">인선미가 준비한<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-500">MBTI 테스트</span></h1>
+            <p class="text-gray-500 mb-10 text-sm font-medium">뼈 맞을 준비 됐어? 내 진짜 성향 알아보기!</p>
+            <button onclick="startTest()" class="btn-transition w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300">
+                테스트 시작하기 🚀
+            </button>
+        </section>
+
+        <!-- 2. 질문 화면 -->
+        <section id="screen-question" class="hidden flex-col h-full w-full relative">
+            <!-- 프로그레스 바 -->
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-8 mt-2">
+                <div id="progress-bar" class="bg-gradient-to-r from-violet-500 to-pink-500 h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+            </div>
+            
+            <div class="flex-1 flex flex-col justify-center">
+                <div class="text-pink-500 font-bold mb-2 text-sm" id="question-number">Q. 1/12</div>
+                <h2 id="question-text" class="text-xl sm:text-2xl font-bold mb-8 leading-tight min-h-[80px]">질문 텍스트가 여기에 들어갑니다.</h2>
+                
+                <div class="space-y-4 w-full">
+                    <button id="btn-a" onclick="handleAnswer('A')" class="btn-transition w-full text-left p-4 sm:p-5 border-2 border-gray-100 rounded-2xl hover:border-violet-400 hover:bg-violet-50 font-medium text-gray-700 bg-white shadow-sm flex items-center gap-3">
+                        <span class="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">A</span>
+                        <span id="text-a">답변 A</span>
+                    </button>
+                    <button id="btn-b" onclick="handleAnswer('B')" class="btn-transition w-full text-left p-4 sm:p-5 border-2 border-gray-100 rounded-2xl hover:border-pink-400 hover:bg-pink-50 font-medium text-gray-700 bg-white shadow-sm flex items-center gap-3">
+                        <span class="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">B</span>
+                        <span id="text-b">답변 B</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 로딩 화면 -->
+        <section id="screen-loading" class="hidden flex-col h-full justify-center items-center text-center">
+            <div class="w-16 h-16 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-6"></div>
+            <h2 class="text-xl font-bold mb-2">분석 중... 🧠</h2>
+            <p class="text-gray-500 text-sm">너의 뼛속까지 파헤치는 중!</p>
+        </section>
+
+        <!-- 4. 결과 화면 -->
+        <section id="screen-result" class="hidden flex-col h-full items-center text-center overflow-y-auto pb-4 pt-2">
+            <div class="animate-fade-in-up w-full flex flex-col items-center">
+                <p class="text-sm font-bold text-gray-500 mb-1">너의 본캐는...</p>
+                <div id="result-mbti" class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-500 mb-2 tracking-widest">
+                    ENTP
+                </div>
+                <h2 id="result-title" class="text-2xl font-bold mb-6 text-gray-800">아가리 파이터</h2>
+                
+                <div class="bg-gray-50 p-5 rounded-2xl w-full mb-6 border border-gray-100 shadow-inner text-left">
+                    <ul id="result-desc" class="space-y-3 text-sm text-gray-600 font-medium leading-relaxed">
+                        <li>🔥 논쟁 즐김, 내가 맞음 암튼 맞음</li>
+                        <li>👀 팩트 폭력기, 뼈 때리는 거 장인</li>
+                        <li>🚀 일단 저지르고 수습은 나중에</li>
+                    </ul>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 w-full mb-6">
+                    <div class="bg-violet-50 p-3 rounded-xl border border-violet-100">
+                        <p class="text-xs text-violet-500 font-bold mb-1">💖 찰떡궁합</p>
+                        <p id="match-good" class="font-bold text-gray-700 text-sm">INFJ</p>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-xl border border-red-100">
+                        <p class="text-xs text-red-500 font-bold mb-1">💔 파국궁합</p>
+                        <p id="match-bad" class="font-bold text-gray-700 text-sm">ISFJ</p>
+                    </div>
+                </div>
+
+                <div class="flex w-full gap-3 mt-auto">
+                    <button onclick="copyToClipboard()" class="btn-transition flex-1 bg-white border-2 border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <span>🔗</span> 링크 공유
+                    </button>
+                    <button onclick="restartTest()" class="btn-transition flex-1 bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 flex items-center justify-center gap-2">
+                        <span>🔄</span> 다시 하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- 데이터 정의 ---
+
+        // MZ 스타일 팩폭 질문 리스트 (12문항)
+        const questions = [
+            // E vs I
+            {
+                q: "주말에 약속이 취소됐다! 이때 내 반응은?",
+                typeA: "I", textA: "아싸 개이득 넷플릭스 폼 미쳤다 (침대와 한 몸)",
+                typeB: "E", textB: "아... 오늘 화장 잘 먹었는데? (다른 만날 사람 연락처 뒤적)"
+            },
+            {
+                q: "새로운 모임(동아리, 알바)에 처음 나갔을 때 나는?",
+                typeA: "E", textA: "안녕하세요!!! MBTI가 어떻게 되세요?! (폭풍 친화력)",
+                typeB: "I", textB: "(기빨림) 조용히 끄덕끄덕... 묻는 말에만 대답한다."
+            },
+            {
+                q: "인스타 스토리에 게시물 올릴 때 내 스타일은?",
+                typeA: "I", textA: "친한 친구에게만 올리거나, 감성 풍경 위주로 스윽 올림",
+                typeB: "E", textB: "전체공개로 내 얼굴 뽝! 나 지금 핫플임! 다들 봐라!"
+            },
+            // S vs N
+            {
+                q: "아무것도 안 하고 멍 때릴 때 주로 하는 생각은?",
+                typeA: "S", textA: "오늘 저녁 뭐 먹지? 엽떡? 마라탕?",
+                typeB: "N", textB: "만약에 지금 좀비 사태 터지면 우리 집은 안전한가?"
+            },
+            {
+                q: "비행기 이륙 직전, 창밖을 보며 드는 생각은?",
+                typeA: "N", textA: "엔진 고장나서 바다에 추락하면 어떡하지? 구명조끼 어딨지?",
+                typeB: "S", textB: "기내식 뭐 나오려나, 빨리 도착해서 놀고 싶다."
+            },
+            {
+                q: "친구가 '사과' 하면 뭐가 떠올라? 라고 묻는다면?",
+                typeA: "S", textA: "빨갛다, 맛있다, 과일, 아이폰",
+                typeB: "N", textB: "백설공주 독사과, 뉴턴의 만유인력, 애플 주식 차트"
+            },
+            // T vs F
+            {
+                q: "친구가 '나 우울해서 탕후루 샀어' 라고 할 때 내 반응은?",
+                typeA: "T", textA: "탕후루? 무슨 맛 샀어? 귤? 딸기? (상황 파악)",
+                typeB: "F", textB: "헐 ㅠㅠ 왜 우울해 무슨 일 있었어? (감정 공감)"
+            },
+            {
+                q: "고민 상담을 할 때 내가 진짜로 바라는 친구의 반응은?",
+                typeA: "F", textA: "무조건적인 내 편 들기 및 폭풍 리액션 (감동 심해..)",
+                typeB: "T", textB: "현실적인 해결책 제시 (오은영 박사님 빙의)"
+            },
+            {
+                q: "'너 진짜 열심히 했다!' 라는 칭찬을 들었을 때 속마음은?",
+                typeA: "T", textA: "(결과가 좋아야 할텐데...) 네 감사합니다. (객관적 평가)",
+                typeB: "F", textB: "헐 진짜요? 저 울어요 ㅠㅠ 알아봐줘서 감동... (눈물 콸콸)"
+            },
+            // J vs P
+            {
+                q: "친구들과 여행 가기로 했다! 내 플랜 스타일은?",
+                typeA: "J", textA: "10:00 기상, 11:30 브런치 (플랜B 식당 3개 준비 완료)",
+                typeB: "P", textB: "일단 가서 발길 닿는 대로~ 무계획이 계획이다!"
+            },
+            {
+                q: "팀플 과제 마감일이 다가올 때 내 모습은?",
+                typeA: "P", textA: "마감일의 나야 부탁한다! (벼락치기 아드레날린 폭발 발동)",
+                typeB: "J", textB: "미리미리 조금씩 해둠. 벼락치기는 심장에 해로움."
+            },
+            {
+                q: "내 노트북 바탕화면 정리 상태는?",
+                typeA: "J", textA: "폴더별(학교, 알바, 개인)로 깔끔하게 싹 다 정리되어 있음",
+                typeB: "P", textB: "스크린샷 1234.png, 새폴더(2) 대환장 파티 상태"
+            }
+        ];
+
+        // MBTI 결과 데이터
+        const results = {
+            "ISTJ": { title: "팩폭 장인 프로 갓생러", desc: ["😎 원리원칙이 세상에서 젤 중요함", "📅 다이어리 없으면 못 사는 계획충", "🗣️ 뼈 때리는 팩폭 장인 (본인은 모름)"], good: "ESFP", bad: "ENFP" },
+            "ISFJ": { title: "겉바속촉 프로 짝사랑러", desc: ["🥺 소심한 관종, 나서는 건 싫은데 관심은 좋음", "💭 남 눈치 엄청 봄 (속으로 상처 오만 번 받음)", "👼 챙겨주는 거 좋아함, 인간 마더테레사"], good: "ESFP", bad: "ENTP" },
+            "INFJ": { title: "망상 풀가동 방구석 철학자", desc: ["🌌 겉으론 평온한데 머릿속은 우주 대폭발 중", "✋ 선 넘는 거 세상에서 제일 싫어함 (칼손절)", "🔮 의미 없는 인간관계 극혐, 좁고 깊은 인맥"], good: "ENFP", bad: "ESTP" },
+            "INTJ": { title: "인간미 제로 팩트 폭격기", desc: ["🤖 효율성 집착 광공 (쓸데없는 짓 혐오함)", "📚 지적 허세 약간 있음 (내가 젤 똑똑함)", "🧊 차가워 보이지만 내 사람에겐 은근 따뜻"], good: "ENFP", bad: "ESFJ" },
+            "ISTP": { title: "귀찮음 맥스 마이웨이", desc: ["🛏️ 누워있는 게 젤 좋아 (침대와 물아일체)", "💬 카톡 읽씹/안읽씹 장인 (귀찮아서)", "🛠️ 위기 상황에서 폼 미침 (해결 능력 갑)"], good: "ESTJ", bad: "ENFJ" },
+            "ISFP": { title: "누워있는 뽀로로", desc: ["🐧 노는 게 젤 좋지만 집 밖은 위험함", "🕊️ 평화주의자, 갈등 생기면 회피 스킬 만렙", "🎨 감성 충만, 미적 감각 은근 뛰어남"], good: "ENFJ", bad: "ENTJ" },
+            "INFP": { title: "감성 충만 프로 과몰입러", desc: ["😭 유리멘탈, 남이 한 말 곱씹으며 밤에 이불킥", "🦄 망상왕 (내가 아이돌이라면? 로또 맞으면?)", "💖 한 번 꽂히면 덕질 오지게 함"], good: "ENFJ", bad: "ESTJ" },
+            "INTP": { title: "호기심 천국 팩트 살인마", desc: ["🤔 '왜?' 라는 말을 입에 달고 삼", "👻 관심 없는 건 아예 쳐다도 안 봄", "💻 공상 쩔음, 실행력은 제로에 수렴"], good: "ENTJ", bad: "ESFJ" },
+            "ESTP": { title: "폼생폼사 인싸 욜로족", desc: ["🔥 오늘만 산다! 스릴과 액션 매니아", "눈치 백단, 사회생활 만렙 (근데 하기 싫음)", "💸 충동구매 장인, 일단 지르고 봄"], good: "ISFJ", bad: "INFP" },
+            "ESFP": { title: "텐션 폭발 파티룸 호스트", desc: ["🎉 어딜 가든 내가 주인공이어야 함 (관심병)", "😂 리액션 부자, 방청객 알바 최적화", "🤫 심각한 분위기 못 참음, 어떻게든 띄움"], good: "ISFJ", bad: "INTJ" },
+            "ENFP": { title: "대가리 꽃밭 인간 리트리버", desc: ["🐶 금방 사랑에 빠지고 금방 식음 (금사빠 금사식)", "✨ 호기심 요정, 새로운 거 시도하는 거 꿀잼", "🌪️ 리액션 혜자인데 은근 기분파 심함"], good: "INFJ", bad: "ISTJ" },
+            "ENTP": { title: "광기의 아가리 파이터", desc: ["🥊 논쟁 즐김, 내가 틀려도 내가 맞다고 우김", "💡 아이디어 뱅크인데 마무리를 못 함", "🤪 지나가는 똥개한테도 말 거는 오지라퍼"], good: "INFJ", bad: "ISFJ" },
+            "ESTJ": { title: "젊은 꼰대 불도저", desc: ["🔥 답답한 꼴 절대 못 봄 (내가 하고 말지)", "📈 호불호 확실, 일 못하는 사람 혐오함", "🗣️ 잔소리 대마왕 (근데 다 맞는 말이라 반박 불가)"], good: "ISTP", bad: "INFP" },
+            "ESFJ": { title: "프로 오지라퍼 인간 핫팩", desc: ["☀️ 인맥 부자, 내 사람들 챙기기 바쁨", "💬 리액션 봇, 영혼 없는 '아 진짜요?' 달인", "🥺 남한테 미움받는 거 극도로 두려워함"], good: "ISFP", bad: "INTP" },
+            "ENFJ": { title: "인류애 풀충전 다정 보스", desc: ["🤝 오지랖 태평양, 리더/반장 재질 (사서 고생)", "🥰 사람을 너무 믿어서 상처도 잘 받음", "💬 말 예쁘게 하는 사람한테 치임"], good: "INFP", bad: "ISTP" },
+            "ENTJ": { title: "앞만 보는 갓생러 폭군", desc: ["👑 조별과제 버스 기사 (답답해서 본인이 다 함)", "💪 야망 쩔음, 내 인생에 실패란 없다", "🔪 감정팔이 안 통함, 결과로 증명해라"], good: "INTP", bad: "ISFP" }
+        };
+
+        // --- 상태 관리 ---
+        let currentQuestion = 0;
+        let scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+
+        // --- DOM 요소 ---
+        const screens = {
+            intro: document.getElementById('screen-intro'),
+            question: document.getElementById('screen-question'),
+            loading: document.getElementById('screen-loading'),
+            result: document.getElementById('screen-result')
+        };
+        
+        const qNumber = document.getElementById('question-number');
+        const qText = document.getElementById('question-text');
+        const textA = document.getElementById('text-a');
+        const textB = document.getElementById('text-b');
+        const progressBar = document.getElementById('progress-bar');
+        const btnA = document.getElementById('btn-a');
+        const btnB = document.getElementById('btn-b');
+
+        // --- 함수 ---
+
+        function switchScreen(screenId) {
+            Object.values(screens).forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            screens[screenId].classList.remove('hidden');
+        }
+
+        function startTest() {
+            currentQuestion = 0;
+            scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+            switchScreen('question');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            // 애니메이션 초기화 트리거
+            qText.classList.remove('animate-fade-in-up');
+            btnA.classList.remove('animate-fade-in-up');
+            btnB.classList.remove('animate-fade-in-up');
+            
+            // 약간의 딜레이 후 애니메이션 재적용 (리플로우 활용)
+            void qText.offsetWidth;
+            
+            qText.classList.add('animate-fade-in-up');
+            btnA.classList.add('animate-fade-in-up');
+            btnB.classList.add('animate-fade-in-up');
+            
+            // 버튼 나타나는 시간차 주기
+            btnA.style.animationDelay = "0.1s";
+            btnB.style.animationDelay = "0.2s";
+
+            const qData = questions[currentQuestion];
+            qNumber.textContent = `Q. ${currentQuestion + 1}/${questions.length}`;
+            qText.textContent = qData.q;
+            textA.textContent = qData.textA;
+            textB.textContent = qData.textB;
+            
+            // 프로그레스 바 업데이트
+            const progress = ((currentQuestion) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function handleAnswer(choice) {
+            const qData = questions[currentQuestion];
+            const type = choice === 'A' ? qData.typeA : qData.typeB;
+            
+            scores[type]++;
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                renderQuestion();
+            } else {
+                progressBar.style.width = `100%`;
+                finishTest();
+            }
+        }
+
+        function finishTest() {
+            switchScreen('loading');
+            
+            // 1.5초 로딩 연출
+            setTimeout(() => {
+                calculateAndShowResult();
+            }, 1500);
+        }
+
+        function calculateAndShowResult() {
+            // MBTI 계산 로직
+            const mbti = 
+                (scores.E >= scores.I ? 'E' : 'I') +
+                (scores.S >= scores.N ? 'S' : 'N') +
+                (scores.T >= scores.F ? 'T' : 'F') +
+                (scores.J >= scores.P ? 'J' : 'P');
+
+            const resultData = results[mbti];
+
+            // 결과 화면 업데이트
+            document.getElementById('result-mbti').textContent = mbti;
+            document.getElementById('result-title').textContent = resultData.title;
+            
+            const ul = document.getElementById('result-desc');
+            ul.innerHTML = ''; // 초기화
+            resultData.desc.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `• ${item}`;
+                ul.appendChild(li);
+            });
+
+            document.getElementById('match-good').textContent = resultData.good;
+            document.getElementById('match-bad').textContent = resultData.bad;
+
+            switchScreen('result');
+        }
+
+        function restartTest() {
+            switchScreen('intro');
+        }
+
+        function copyToClipboard() {
+            const url = window.location.href;
+            
+            // 클립보드 복사 (모던 브라우저 및 구형 호환)
+            try {
+                // 임시 텍스트 에리어 생성
+                const tempInput = document.createElement("input");
+                tempInput.value = url;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+                
+                showToast("링크가 복사되었습니다! ✨");
+            } catch (err) {
+                showToast("복사에 실패했습니다 😢");
+            }
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+
+    </script>
+</body>
+</html>
